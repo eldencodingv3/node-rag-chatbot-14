@@ -1,6 +1,15 @@
-# RAG FAQ Chatbot
+# CloudDesk RAG Support Chatbot
 
-A Node.js RAG (Retrieval-Augmented Generation) chatbot for customer support. It uses LanceDB for vector storage and OpenAI for embeddings and chat completions, delivering accurate answers grounded in your FAQ dataset.
+A Node.js RAG (Retrieval-Augmented Generation) chatbot that answers customer support questions using LanceDB for vector search and OpenAI for embeddings and chat completions.
+
+## Features
+
+- **RAG-powered responses** — retrieves relevant FAQ entries before generating answers
+- **Vector search** — uses LanceDB to find semantically similar questions
+- **OpenAI integration** — text-embedding-3-small for embeddings, GPT-3.5-turbo for chat
+- **Modern chat UI** — responsive web interface with real-time messaging
+- **Health check endpoint** — `/api/health` for monitoring
+- **Easy FAQ updates** — edit `data/faqs.json` and restart the server
 
 ## Architecture
 
@@ -8,74 +17,94 @@ A Node.js RAG (Retrieval-Augmented Generation) chatbot for customer support. It 
 User Question
      |
      v
-  Express API  -->  OpenAI Embeddings  -->  LanceDB Vector Search
-     |                                            |
-     v                                            v
-  OpenAI Chat Completion  <--  Top-K relevant FAQ entries
+[Embed Query] ──> OpenAI text-embedding-3-small
      |
      v
-  Answer returned to user
+[Vector Search] ──> LanceDB (top 3 matches)
+     |
+     v
+[Build Prompt] ──> System prompt + FAQ context + user question
+     |
+     v
+[Generate Reply] ──> OpenAI GPT-3.5-turbo
+     |
+     v
+Chat Response
 ```
 
-- **Express** — HTTP server and chat API
-- **LanceDB** — Embedded vector database for storing and searching FAQ embeddings
-- **OpenAI** — Text embeddings (`text-embedding-3-small`) and chat completions (`gpt-4o-mini`)
+## Prerequisites
+
+- Node.js >= 20.0.0
+- OpenAI API key
 
 ## Setup
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/eldencodingv3/node-rag-chatbot-14.git
    cd node-rag-chatbot-14
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Configure environment variables**
+
    ```bash
    cp .env.example .env
    ```
+
    Edit `.env` and add your OpenAI API key.
 
 4. **Start the server**
+
    ```bash
    npm start
    ```
-   The server will run at `http://localhost:3000`.
+
+   The app will be available at `http://localhost:3000`.
 
 ## Environment Variables
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `OPENAI_API_KEY` | Yes | — | Your OpenAI API key |
-| `PORT` | No | `3000` | Port the server listens on |
-| `NODE_ENV` | No | `development` | Environment mode (`development` or `production`) |
+| `PORT` | No | `3000` | Server port |
+| `NODE_ENV` | No | `development` | Environment mode |
+
+## API Endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/health` | Health check — returns `{ "status": "ok" }` |
+| `POST` | `/api/chat` | Send a message — body: `{ "message": "..." }`, returns `{ "response": "..." }` |
+| `GET` | `/` | Serves the chat UI |
 
 ## Updating the FAQ Dataset
 
-1. Edit `data/faqs.json` with your questions and answers
-2. Restart the server — embeddings are regenerated on startup
-3. The chatbot will immediately use the updated FAQ data
+Edit `data/faqs.json` with your questions and answers:
 
-## Development
-
-```bash
-npm run dev
+```json
+[
+  {
+    "question": "Your question here?",
+    "answer": "Your answer here."
+  }
+]
 ```
 
-Uses Node.js `--watch` mode to auto-restart on file changes.
+Restart the server after making changes. Embeddings are regenerated on startup.
 
-## Deployment
+## Deploying to Railway
 
-This project is configured for deployment on **Railway**:
+1. Push your code to GitHub
+2. Create a new project on [Railway](https://railway.app)
+3. Connect your GitHub repository
+4. Add the `OPENAI_API_KEY` environment variable in Railway's dashboard
+5. Railway will auto-detect the Node.js project and deploy using `npm start`
 
-- Push to `main` triggers automatic deployment
-- Environment variables are configured in the Railway dashboard
-- The app listens on the `PORT` environment variable provided by Railway
-
-## License
-
-MIT
+The `PORT` variable is automatically set by Railway — no manual configuration needed.
